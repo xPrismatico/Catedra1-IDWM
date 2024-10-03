@@ -1,0 +1,14 @@
+# Exclude bin and obj folders
+bin/
+obj/
+
+# IDEs
+.vscode/
+.idea/
+
+# Environment
+.Environment
+
+#DB
+*.sqlite
+*.db
