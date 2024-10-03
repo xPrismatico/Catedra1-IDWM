@@ -14,6 +14,7 @@ namespace api.src.Repositories
         Task UpdateUserAsync(User user);
         Task DeleteUserAsync(int id);
         Task<bool> UserExistsByRutAsync(string rut);
+        IQueryable<User> GetAllUsersQuery();
     }
 }
 

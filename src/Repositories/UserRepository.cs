@@ -32,9 +32,16 @@ namespace api.src.Repositories
 
         public async Task UpdateUserAsync(User user)
         {
+            var trackedEntity = await _context.Users.FindAsync(user.Id);
+            if (trackedEntity != null)
+            {
+                _context.Entry(trackedEntity).State = EntityState.Detached; // Desvinculamos la entidad previamente rastreada
+            }
+
             _context.Entry(user).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
+
 
         public async Task DeleteUserAsync(int id)
         {
@@ -50,5 +57,10 @@ namespace api.src.Repositories
         {
             return await _context.Users.AnyAsync(u => u.Rut == rut);
         }
+        public IQueryable<User> GetAllUsersQuery()
+        {
+            return _context.Users.AsQueryable();  // Devolvemos IQueryable para aplicar filtros y ordenación
+        }
+
     }
 }

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using api.src.Models;
 using api.src.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace api.src.Controllers
@@ -43,11 +44,30 @@ namespace api.src.Controllers
 
         // GET: Obtener todos los usuarios
         [HttpGet("")]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] string? sort=null,[FromQuery] string? gender=null)
         {
             return await SafeExecute(async () =>
             {
-                var users = await _userRepository.GetAllUsersAsync();
+                // Empezamos obteniendo todos los usuarios como IQueryable para aplicar filtros y ordenación
+                var query = _userRepository.GetAllUsersQuery();
+
+                // Filtrar por género si se proporciona el parámetro
+                if (!string.IsNullOrEmpty(gender))
+                {
+                    query = query.Where(u => u.Genero.ToLower() == gender.ToLower());
+                }
+
+                // Ordenar según el parámetro sort
+                if (sort == "desc")
+                {
+                    query = query.OrderByDescending(u => u.Name);
+                }
+                else
+                {
+                    query = query.OrderBy(u => u.Name);
+                }
+
+                var users = await query.ToListAsync();
                 return HandleResult(users);
             });
         }
@@ -77,8 +97,13 @@ namespace api.src.Controllers
                 return BadRequest("El ID del usuario no coincide.");
 
             // Verificar si el usuario existe
-            if (!await _userRepository.UserExistsByRutAsync(user.Rut))
+            var existingUser = await _userRepository.GetUserByIdAsync(id);
+            if (existingUser == null)
                 return NotFound("Usuario no encontrado.");
+
+            // Verificar si el RUT ya está en uso por otro usuario
+            if (existingUser.Rut != user.Rut && await _userRepository.UserExistsByRutAsync(user.Rut))
+                return Conflict("El RUT ya está en uso por otro usuario.");
 
             return await SafeExecute(async () =>
             {
