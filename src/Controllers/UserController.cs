@@ -62,6 +62,7 @@ namespace api.src.Controllers
                 {
                     query = query.OrderByDescending(u => u.Name);
                 }
+                
                 else
                 {
                     query = query.OrderBy(u => u.Name);
@@ -92,10 +93,6 @@ namespace api.src.Controllers
             if (validationError != null)
                 return validationError;
 
-            // Verificar si el ID coincide
-            if (id != user.Id)
-                return BadRequest("El ID del usuario no coincide.");
-
             // Verificar si el usuario existe
             var existingUser = await _userRepository.GetUserByIdAsync(id);
             if (existingUser == null)
@@ -105,9 +102,16 @@ namespace api.src.Controllers
             if (existingUser.Rut != user.Rut && await _userRepository.UserExistsByRutAsync(user.Rut))
                 return Conflict("El RUT ya está en uso por otro usuario.");
 
+            // Actualizar los valores del usuario existente con los datos del body
+            existingUser.Rut = user.Rut;
+            existingUser.Name = user.Name;
+            existingUser.Email = user.Email;
+            existingUser.Genero = user.Genero;
+            existingUser.FechaNacimiento = user.FechaNacimiento;
+
             return await SafeExecute(async () =>
             {
-                await _userRepository.UpdateUserAsync(user);
+                await _userRepository.UpdateUserAsync(existingUser);
                 return NoContent();  // 204 No Content, actualizaciones exitosas
             });
         }
